@@ -49,6 +49,7 @@ void handle_alarm(int ignoreme) {
 }
 
 void foo(int);
+
 int main() {
 
 	int i;
