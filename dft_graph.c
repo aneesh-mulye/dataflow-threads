@@ -1,10 +1,16 @@
-#include "dft_graph.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 #define DFT_DEBUG 1
 
-int dft_graph_init(dft_graph_t * graph, unsigned const int size) {
+typedef struct {
+	unsigned int **adjmat;
+	unsigned int size;
+} dft_graph_t;
+
+static dft_graph_t gg;
+
+static int dft_graph_init(dft_graph_t * graph, unsigned const int size) {
 
 	int i;
 
@@ -30,7 +36,7 @@ int dft_graph_init(dft_graph_t * graph, unsigned const int size) {
 	return 0;
 }
 
-int dft_graph_link(dft_graph_t * graph, unsigned const int source,
+static int dft_graph_link(dft_graph_t * graph, unsigned const int source,
 		unsigned const int dest) {
 	if(!graph)
 		return -1;
@@ -40,7 +46,7 @@ int dft_graph_link(dft_graph_t * graph, unsigned const int source,
 	return 0;
 }
 
-int dft_graph_pretty(dft_graph_t * graph) {
+static int dft_graph_pretty(dft_graph_t * graph) {
 
 	int i, j;
 
@@ -62,7 +68,7 @@ int dft_graph_pretty(dft_graph_t * graph) {
 
 }
 
-int dft_graph_toposort(dft_graph_t * graph, unsigned int * order) {
+static int dft_graph_toposort(dft_graph_t * graph, unsigned int * order) {
 
 	unsigned int done,
 		     *in_degs;
@@ -110,4 +116,20 @@ int dft_graph_toposort(dft_graph_t * graph, unsigned int * order) {
 	}
 
 	return 0;
+}
+
+int dft_graph_init_test(unsigned const int size) {
+	return dft_graph_init(&gg, size);
+}
+
+int dft_graph_link_test(unsigned const int source, unsigned const int dest) {
+	return dft_graph_link(&gg, source, dest);
+}
+
+int dft_graph_pretty_test() {
+	return dft_graph_pretty(&gg);
+}
+
+int dft_graph_toposort_test(unsigned int * order) {
+	return dft_graph_toposort(&gg, order);
 }
