@@ -8,6 +8,7 @@
 #define STACK_SIZE (16*1024)
 #define TIMESLICE 10000
 #define BUFFER_SIZE 20
+#define SIGWAKE SIGPROF
 
 typedef struct {
 	void *buf;
@@ -33,6 +34,8 @@ static unsigned int * thread_order;
 
 int dft_read(unsigned const int, void *, unsigned const int);
 int dft_write(unsigned const int, void *, unsigned const int);
+
+void dft_schedule();
 
 static int dft_graph_init(dft_graph_t * graph, unsigned const int size) {
 
@@ -166,6 +169,8 @@ int dft_graph_toposort_test(unsigned int * order) {
 }
 
 int dft_init(unsigned const int size) {
+
+
 	contexts = malloc((sizeof(ucontext_t))* size);
 	if (!contexts)
 		return -1;
@@ -205,16 +210,35 @@ int dft_thread_create(void (*tfunc)(int)) {
 }
 
 int dft_execute() {
+	struct sigaction sact;
+	struct itimerval timeQ;
+
 	if(-1 == dft_graph_toposort(&gg, thread_order))
 		return -1;
+
+	memset(&sact, 0, sizeof(sact));
+	sact.sa_handler = dft_schedule;
+	sigaction(SIGWAKE, &sact, 0);
+
+	timeQ.it_value.tv_usec = TIMESLICE;
+	timeQ.it_value.tv_sec = 0;
+	timeQ.it_interval.tv_usec = 0;
+	timeQ.it_interval.tv_sec = 0;
+	setitimer(ITIMER_PROF, &timeQ, 0);
 	setcontext(contexts+thread_order[0]);
 }
 
 void dft_schedule() {
 	unsigned int previous;
+	struct itimerval timeQ;
 
 	previous = current_thread_index;
 	current_thread_index = (current_thread_index + 1) % (gg.size);
+	timeQ.it_value.tv_usec = TIMESLICE;
+	timeQ.it_value.tv_sec = 0;
+	timeQ.it_interval.tv_usec = 0;
+	timeQ.it_interval.tv_sec = 0;
+	setitimer(ITIMER_PROF, &timeQ, 0);
 	swapcontext(contexts + thread_order[previous],
 			contexts + thread_order[current_thread_index]);
 
@@ -222,7 +246,26 @@ void dft_schedule() {
 }
 
 int dft_yield() {
-	dft_schedule();
+	struct itimerval timeQ;
+	sigset_t newset, oldset;
+	/* We do not explicitly call schedule here, but set an interval timer
+	 * for NOW.
+	 */
+	/* Disabling signals. This is to ensure that any signals we get are
+	 * `collapsed' into a single one at the very end. */
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGWAKE);
+	sigprocmask(SIG_BLOCK, &newset, &oldset);
+	timeQ.it_value.tv_usec = 1;
+	timeQ.it_value.tv_sec = 0;
+	timeQ.it_interval.tv_usec = 0;
+	timeQ.it_interval.tv_sec = 0;
+	setitimer(ITIMER_PROF, &timeQ, 0);
+	sigprocmask(SIG_SETMASK, &oldset, NULL);
+	/* ^^^ This is (we hope!) as good as a call to dft_schedule(). The
+	 * reason for this bizarre-looking way of doing it is to override any
+	 * potential wating timers to execute in the middle of a schedule.
+	 */
 }
 
 int dft_thread_link(unsigned const int source, unsigned const int dest) {
@@ -237,8 +280,11 @@ int dft_read(unsigned const int in, void * readbuf, unsigned const int count) {
 
 	unsigned int i, done = -1;
 	unsigned int curr_thread = thread_order[current_thread_index];
+	sigset_t newset, oldset;
 
-	/* DISABLE SIGNALS HERE */
+	/* The following is not locked because we estimate it doesn't need to
+	 * be. We pray it is so.
+	 */
 	for (i=0; i < gg.size; i++) {
 		if(gg.adjmat[i][curr_thread])
 			done++;
@@ -249,8 +295,20 @@ int dft_read(unsigned const int in, void * readbuf, unsigned const int count) {
 	if(i == gg.size)
 		return -1;
 
-	done = dft_buffer_read(gg.adjmat[i][curr_thread], readbuf, count);
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGWAKE);
+	/* TODO:
+	 * 1) Make buffer sizes user-specified.
+	 * 2) Provide the illusion of infinite-size buffers.
+	 */
+	done = -1;
+	while(done) {
+	/* DISABLE SIGNALS HERE */
+		sigprocmask(SIG_BLOCK, &newset, &oldset);
+		done=dft_buffer_read(gg.adjmat[i][curr_thread], readbuf, count);
+		sigprocmask(SIG_SETMASK, &oldset, NULL);
 	/* ENABLE SIGNALS HERE */
+	}
 	return done;
 }
 
@@ -258,6 +316,7 @@ int dft_write(unsigned const int in, void * writebuf,
 		unsigned const int count) {
 	unsigned int i, done = -1;
 	unsigned int curr_thread = thread_order[current_thread_index];
+	sigset_t newset, oldset;
 
 	/* DISABLE SIGNALS HERE */
 	for (i=0; i < gg.size; i++) {
@@ -270,8 +329,20 @@ int dft_write(unsigned const int in, void * writebuf,
 	if(i == gg.size)
 		return -1;
 
-	done = dft_buffer_write(gg.adjmat[curr_thread][i], writebuf, count);
+	sigemptyset(&newset);
+	sigaddset(&newset, SIGWAKE);
+	/* TODO:
+	 * 1) Make buffer sizes user-specified.
+	 * 2) Provide the illusion of infinite-size buffers.
+	 */
+	done = -1;
+	while(done) {
+	/* DISABLE SIGNALS HERE */
+		sigprocmask(SIG_BLOCK, &newset, &oldset);
+		done=dft_buffer_write(gg.adjmat[curr_thread][i],writebuf,count);
+		sigprocmask(SIG_SETMASK, &oldset, NULL);
 	/* ENABLE SIGNALS HERE */
+	}
 	return done;
 }
 

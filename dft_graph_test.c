@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-const int num_threads = 16;
+const int num_threads = 3;
 
 void foo(int);
 void source(int);
@@ -94,7 +94,7 @@ void source(int me) {
 		i++;
 		printf("I am the source! All hail me!\n");
 		dft_write(0, &a, 1);
-		sleep(1);
+		//sleep(1);
 		dft_yield();
 	}
 }
@@ -107,7 +107,7 @@ void intermediate(int me) {
 		dft_read(0, &temp, 1);
 		dft_write(0, &temp, 1);
 		printf("I am thread %d, who just processed '%c'\n", me, temp);
-		sleep(1);
+		//sleep(1);
 		dft_yield();
 	}
 }
@@ -119,7 +119,7 @@ void sink(int me) {
 	while(1) {
 		dft_read(0, &b, 1);
 		printf("I am the sink! I have consumed '%c'! Fear me!\n", b);
-		sleep(1);
+		//sleep(1);
 		dft_yield();
 	}
 }
