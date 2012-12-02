@@ -7,6 +7,40 @@ void foo(int);
 void source(int);
 void sink(int);
 void intermediate(int);
+void doubler(int);
+void muxer(int);
+
+int main() {
+
+	//return main_thread_test();
+	//return main_rr_test();
+	return main_compo_test();
+}
+
+int main_compo_test() {
+
+	int i;
+	unsigned int *order;
+
+	dft_init(6);
+
+	dft_thread_create(source);
+	dft_thread_create(doubler);
+	dft_thread_create(intermediate);
+	dft_thread_create(intermediate);
+	dft_thread_create(muxer);
+	dft_thread_create(sink);
+	dft_thread_link(0, 1);
+	dft_thread_link(1, 2);
+	dft_thread_link(1, 3);
+	dft_thread_link(2, 4);
+	dft_thread_link(3, 4);
+	dft_thread_link(4, 5);
+	
+	dft_execute();
+
+	return 0;
+}
 
 int main_rr_test() {
 
@@ -93,11 +127,6 @@ int main_graph_test() {
 	return 0;
 }
 
-int main() {
-
-	//return main_thread_test();
-	return main_rr_test();
-}
 
 void foo(int me)
 {
@@ -144,6 +173,28 @@ void sink(int me) {
 		x = dft_get_invoks();
 		printf("Sched Invoks = %u\n",x);
 		//sleep(1);
+		dft_yield();
+	}
+}
+
+void doubler(int me) {
+
+	char a;
+	while(1) {
+		dft_read(0, &a, 1);
+		dft_write(0, &a, 1);
+		dft_write(1, &a, 1);
+		dft_yield();
+	}
+}
+
+void muxer(int me) {
+	char a;
+	while(1) {
+		dft_read(0, &a, 1);
+		dft_write(0, &a, 1);
+		dft_read(1, &a, 1);
+		dft_write(0, &a, 1);
 		dft_yield();
 	}
 }
