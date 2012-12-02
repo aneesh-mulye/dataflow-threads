@@ -10,6 +10,8 @@
 #define BUFFER_SIZE 20
 #define SIGWAKE SIGPROF
 
+//#define SCHED_RR
+
 typedef struct {
 	void *buf;
 	unsigned int size;
@@ -21,6 +23,14 @@ typedef struct {
 	unsigned int size;
 } dft_graph_t;
 
+typedef struct {
+	unsigned int sch_invoks;
+	unsigned int read_invoks;
+	unsigned int write_invoks;
+	unsigned int final_writes;
+} dft_stats_t;
+
+
 static int dft_buffer_init(dft_buffer *, unsigned const int);
 static int dft_buffer_read(dft_buffer *, void *, unsigned const int);
 static int dft_buffer_write(dft_buffer *, void *, unsigned const int);
@@ -29,13 +39,19 @@ static int dft_buffer_pretty(dft_buffer *);
 static dft_graph_t gg;
 static ucontext_t * contexts;
 static ucontext_t user_context; /* TODO */
-static unsigned int current_thread_index;
-static unsigned int * thread_order;
+volatile static unsigned int current_thread;
+static dft_stats_t stats;
+static int (*dft_sched_global)(int *);
 
 int dft_read(unsigned const int, void *, unsigned const int);
 int dft_write(unsigned const int, void *, unsigned const int);
+void dft_final_write();
+unsigned int dft_get_invoks();
 
 void dft_schedule();
+int dft_sched_rr(int *);
+int dft_sched_topo(int *);
+int dft_sched_fill(int *, int *);
 
 static int dft_graph_init(dft_graph_t * graph, unsigned const int size) {
 
@@ -170,22 +186,22 @@ int dft_graph_toposort_test(unsigned int * order) {
 
 int dft_init(unsigned const int size) {
 
+	memset(&stats, 0, sizeof(stats));
 
 	contexts = malloc((sizeof(ucontext_t))* size);
 	if (!contexts)
 		return -1;
 
-	thread_order = malloc((sizeof(unsigned int)*size));
-	if(!thread_order) {
+	if (-1 == dft_graph_init(&gg, size)) {
 		free(contexts);
 		return -1;
 	}
 
-	if (-1 == dft_graph_init(&gg, size)) {
-		free(contexts);
-		free(thread_order);
-		return -1;
-	}
+#ifdef SCHED_RR
+	dft_sched_global = dft_sched_rr;
+#else
+	dft_sched_global = dft_sched_topo;
+#endif
 
 	return 0;
 }
@@ -212,9 +228,9 @@ int dft_thread_create(void (*tfunc)(int)) {
 int dft_execute() {
 	struct sigaction sact;
 	struct itimerval timeQ;
-
-	if(-1 == dft_graph_toposort(&gg, thread_order))
-		return -1;
+	int next;
+	dft_sched_global(&next);
+	current_thread = next;
 
 	memset(&sact, 0, sizeof(sact));
 	sact.sa_handler = dft_schedule;
@@ -225,24 +241,65 @@ int dft_execute() {
 	timeQ.it_interval.tv_usec = 0;
 	timeQ.it_interval.tv_sec = 0;
 	setitimer(ITIMER_PROF, &timeQ, 0);
-	setcontext(contexts+thread_order[0]);
+	setcontext(contexts + next);
 }
 
 void dft_schedule() {
-	unsigned int previous;
+	unsigned int previous, next;
 	struct itimerval timeQ;
 
+	stats.sch_invoks++;
+
+	previous = current_thread;
+	dft_sched_global(&next);
+	current_thread = next;
+	/*
 	previous = current_thread_index;
-	current_thread_index = (current_thread_index + 1) % (gg.size);
+	current_thread_index = (current_thread_index + 1) % (gg.size); */
 	timeQ.it_value.tv_usec = TIMESLICE;
 	timeQ.it_value.tv_sec = 0;
 	timeQ.it_interval.tv_usec = 0;
 	timeQ.it_interval.tv_sec = 0;
 	setitimer(ITIMER_PROF, &timeQ, 0);
-	swapcontext(contexts + thread_order[previous],
-			contexts + thread_order[current_thread_index]);
+	swapcontext(contexts + previous,
+			contexts + next);
 
 	return;
+}
+
+int dft_sched_topo(int * next) {
+	static int * thread_order = 0x0;
+	static int next_index = 0;
+
+	if(!next)
+		return -1;
+
+	if(!thread_order) {
+		thread_order = malloc((sizeof(unsigned int)*gg.size));
+		if(0x0 == thread_order)
+			return -1;
+		if(-1 == dft_graph_toposort(&gg, thread_order)) {
+			free(thread_order);
+			return -1;
+		}
+	}
+
+	*next = thread_order[next_index];
+	//printf("dft_sched_topo: will return %d\n", *next);
+	next_index = (next_index + 1) % gg.size;
+
+	return 0;
+}
+
+int dft_sched_rr(int * next) {
+
+	static int ind = 0;
+	if(!next)
+		return -1;
+
+	*next = ind;
+	ind = (ind + 1) % gg.size;
+	return 0;
 }
 
 int dft_yield() {
@@ -256,12 +313,13 @@ int dft_yield() {
 	sigemptyset(&newset);
 	sigaddset(&newset, SIGWAKE);
 	sigprocmask(SIG_BLOCK, &newset, &oldset);
-	timeQ.it_value.tv_usec = 1;
+	timeQ.it_value.tv_usec = 0;
 	timeQ.it_value.tv_sec = 0;
 	timeQ.it_interval.tv_usec = 0;
 	timeQ.it_interval.tv_sec = 0;
 	setitimer(ITIMER_PROF, &timeQ, 0);
 	sigprocmask(SIG_SETMASK, &oldset, NULL);
+	dft_schedule();
 	/* ^^^ This is (we hope!) as good as a call to dft_schedule(). The
 	 * reason for this bizarre-looking way of doing it is to override any
 	 * potential wating timers to execute in the middle of a schedule.
@@ -279,14 +337,15 @@ int dft_thread_link(unsigned const int source, unsigned const int dest) {
 int dft_read(unsigned const int in, void * readbuf, unsigned const int count) {
 
 	unsigned int i, done = -1;
-	unsigned int curr_thread = thread_order[current_thread_index];
 	sigset_t newset, oldset;
-
+	unsigned int cur_thread = current_thread;
+	stats.read_invoks++;
 	/* The following is not locked because we estimate it doesn't need to
 	 * be. We pray it is so.
 	 */
 	for (i=0; i < gg.size; i++) {
-		if(gg.adjmat[i][curr_thread])
+		//if(gg.adjmat[i][current_thread])
+		if(gg.adjmat[i][cur_thread])
 			done++;
 		if(done == in)
 			break;
@@ -305,7 +364,10 @@ int dft_read(unsigned const int in, void * readbuf, unsigned const int count) {
 	while(done) {
 	/* DISABLE SIGNALS HERE */
 		sigprocmask(SIG_BLOCK, &newset, &oldset);
-		done=dft_buffer_read(gg.adjmat[i][curr_thread], readbuf, count);
+	//	done=dft_buffer_read(gg.adjmat[i][current_thread],
+	//			readbuf, count);
+		done=dft_buffer_read(gg.adjmat[i][cur_thread],
+				readbuf, count);
 		sigprocmask(SIG_SETMASK, &oldset, NULL);
 	/* ENABLE SIGNALS HERE */
 	}
@@ -315,12 +377,14 @@ int dft_read(unsigned const int in, void * readbuf, unsigned const int count) {
 int dft_write(unsigned const int in, void * writebuf,
 		unsigned const int count) {
 	unsigned int i, done = -1;
-	unsigned int curr_thread = thread_order[current_thread_index];
 	sigset_t newset, oldset;
+	unsigned int cur_thread = current_thread;
+	stats.write_invoks++;
 
 	/* DISABLE SIGNALS HERE */
 	for (i=0; i < gg.size; i++) {
-		if(gg.adjmat[curr_thread][i])
+		//if(gg.adjmat[current_thread][i])
+		if(gg.adjmat[cur_thread][i])
 			done++;
 		if(done == in)
 			break;
@@ -339,7 +403,10 @@ int dft_write(unsigned const int in, void * writebuf,
 	while(done) {
 	/* DISABLE SIGNALS HERE */
 		sigprocmask(SIG_BLOCK, &newset, &oldset);
-		done=dft_buffer_write(gg.adjmat[curr_thread][i],writebuf,count);
+		//done=dft_buffer_write(gg.adjmat[current_thread][i],
+		//		writebuf, count);
+		done=dft_buffer_write(gg.adjmat[cur_thread][i],
+				writebuf, count);
 		sigprocmask(SIG_SETMASK, &oldset, NULL);
 	/* ENABLE SIGNALS HERE */
 	}
@@ -417,4 +484,13 @@ static int dft_buffer_pretty(dft_buffer * b) {
 		printf("%c", *((char *)b->buf + i));
 
 	return 0;
+}
+
+void dft_final_write() {
+	stats.final_writes++;
+	return;
+}
+unsigned int dft_get_invoks()
+{
+	return stats.sch_invoks;
 }
