@@ -10,7 +10,12 @@
 #define BUFFER_SIZE 20
 #define SIGWAKE SIGPROF
 
-//#define SCHED_RR
+static enum {
+	ROUND_ROBIN,
+	TOPOLOGICAL,
+	IDIOTFILL,
+	BACKPROPFILL
+} dft_sched_type = BACKPROPFILL;
 
 typedef struct {
 	void *buf;
@@ -35,6 +40,7 @@ static int dft_buffer_init(dft_buffer *, unsigned const int);
 static int dft_buffer_read(dft_buffer *, void *, unsigned const int);
 static int dft_buffer_write(dft_buffer *, void *, unsigned const int);
 static int dft_buffer_pretty(dft_buffer *);
+static float dft_buffer_fillratio(dft_buffer *);
 
 static dft_graph_t gg;
 static ucontext_t * contexts;
@@ -51,7 +57,8 @@ unsigned int dft_get_invoks();
 void dft_schedule();
 int dft_sched_rr(int *);
 int dft_sched_topo(int *);
-int dft_sched_fill(int *, int *);
+int dft_sched_idiotfill(int*);
+int dft_sched_backpropfill(int *);
 
 static int dft_graph_init(dft_graph_t * graph, unsigned const int size) {
 
@@ -197,11 +204,23 @@ int dft_init(unsigned const int size) {
 		return -1;
 	}
 
-#ifdef SCHED_RR
-	dft_sched_global = dft_sched_rr;
-#else
-	dft_sched_global = dft_sched_topo;
-#endif
+	switch (dft_sched_type) {
+		case ROUND_ROBIN:
+			dft_sched_global = dft_sched_rr;
+			break;
+		case TOPOLOGICAL:
+			dft_sched_global = dft_sched_topo;
+			break;
+		case IDIOTFILL:
+			dft_sched_global = dft_sched_idiotfill;
+			break;
+		case BACKPROPFILL:
+			dft_sched_global = dft_sched_backpropfill;
+			break;
+		default:
+			printf("WTF?! This is not supposed to happen! FIX!\n");
+			break; /* TODO: Remove this break. */
+	}
 
 	return 0;
 }
@@ -299,6 +318,103 @@ int dft_sched_rr(int * next) {
 
 	*next = ind;
 	ind = (ind + 1) % gg.size;
+	return 0;
+}
+
+int dft_sched_idiotfill(int * next) {
+
+	static float *prios = 0x0;
+	float temp = 0, currmax = 0;
+	int i, j;
+	if(!next)
+		return -1;
+
+	if(!prios) {
+		prios = malloc(gg.size * sizeof(float));
+		if(!prios)
+			return -1;
+	}
+
+	memset(prios, 0, sizeof(float)*gg.size);
+	for(i=0; i < gg.size; i++)
+		for(j=0; j < gg.size; j++)
+			if(gg.adjmat[i][j]) {
+				temp=0.5-dft_buffer_fillratio(gg.adjmat[i][j]);
+				if (temp < 0)
+					prios[j] -= temp;
+				else
+					prios[i] += temp;
+			}
+
+	for(i=0; i<gg.size; i++)
+		if(currmax < prios[i]) {
+			currmax = prios[i];
+			*next = i;
+		}
+
+	return 0;
+}
+
+int dft_sched_backpropfill(int * next) {
+
+	static float *stprios = 0x0, *idprios = 0x0;
+	static int *thread_order = 0x0;
+	float temp = 0, currmax = 0, margin = 0.05;
+	int i, j;
+	if(!next)
+		return -1;
+
+	if(!stprios) {
+		stprios = malloc(gg.size * sizeof(float));
+		if(!stprios)
+			return -1;
+	}
+	if(!idprios) {
+		idprios = malloc(gg.size * sizeof(float));
+		if(!idprios)
+			return -1;
+	}
+	if(!thread_order) {
+		thread_order = malloc((sizeof(unsigned int)*gg.size));
+		if(0x0 == thread_order)
+			return -1;
+		if(-1 == dft_graph_toposort(&gg, thread_order)) {
+			free(thread_order);
+			return -1;
+		}
+	}
+
+	memset(stprios, 0, sizeof(float)*gg.size);
+	memset(idprios, 0, sizeof(float)*gg.size);
+	for(i=0; i < gg.size; i++)
+		for(j=0; j < gg.size; j++)
+			if(gg.adjmat[thread_order[i]][j]) {
+				temp = dft_buffer_fillratio(
+					gg.adjmat[thread_order[i]][j]);
+				if (temp > (0.5+margin)) {
+					idprios[j] += (temp - 0.5)*2;
+					idprios[j] += (temp - 0.5)*2 *
+						idprios[thread_order[i]];
+				}
+			}
+	for(i=gg.size; i >= 0; i--)
+		for(j=0; j < gg.size; j++)
+			if(gg.adjmat[j][thread_order[i]]) {
+				temp = dft_buffer_fillratio(
+					gg.adjmat[j][thread_order[i]]);
+				if (temp < (0.5-margin)) {
+					stprios[j] += (0.5-temp)*2;
+					stprios[j] += (0.5 - temp)*2 *
+						stprios[thread_order[i]];
+				}
+			}
+
+	for(i=0; i<gg.size; i++)
+		if(currmax < (idprios[i] + stprios[i])) {
+			currmax = idprios[i] + stprios[i];
+			*next = i;
+		}
+
 	return 0;
 }
 
@@ -451,6 +567,15 @@ static int dft_buffer_write(dft_buffer * b, void * writebuf, unsigned int count)
 	return 0;
 }
 
+static float dft_buffer_fillratio(dft_buffer * b) {
+
+	if(!b)
+		return -1;
+
+	return ((float)((b->size + b->head - b->tail - 1)%(b->size)))/
+		((float)(b->size));
+}
+
 static int dft_buffer_read(dft_buffer * b, void * readbuf, unsigned int count) {
 
 	unsigned int used;
@@ -490,6 +615,7 @@ void dft_final_write() {
 	stats.final_writes++;
 	return;
 }
+
 unsigned int dft_get_invoks()
 {
 	return stats.sch_invoks;

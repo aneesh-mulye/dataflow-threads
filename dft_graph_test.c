@@ -170,6 +170,9 @@ void sink(int me) {
 	while(1) {
 		dft_read(0, &b, 1);
 		printf("I am the sink! I have consumed '%c'! Fear me!\n", b);
+		/*
+		dft_read(0, &b, 1);
+		printf("I am the sink! I have consumed '%c'! Fear me!\n", b); */
 		x = dft_get_invoks();
 		printf("Sched Invoks = %u\n",x);
 		//sleep(1);
