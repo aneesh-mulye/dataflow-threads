@@ -2,7 +2,6 @@
 #include <signal.h>
 #include <stdio.h>
 
-const int num_threads = 6;
 const int PROF_BLOCKSIZE = 100;
 
 //#define DEBUG_LOG
@@ -29,8 +28,9 @@ int main(int argc, char **argv) {
 
 	dft_init(1 << depth);
 
-	for(i=0; i < (1<<(depth-1)) -1 ; i++)
+	for(i=0; i < (1<<(depth-1)) -1 ; i++) {
 		dft_thread_create(doubler);
+	}
 
 	for(i = 0; i < (1<<(depth-1)); i++)
 		dft_thread_create(sink);

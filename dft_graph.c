@@ -359,6 +359,7 @@ int dft_sched_backpropfill(int * next) {
 
 	static float *stprios = 0x0, *idprios = 0x0;
 	static int *thread_order = 0x0;
+	static float *indegrees = 0x0, *outdegrees = 0x0;
 	float temp = 0, currmax = 0, margin = 0.05;
 	int i, j;
 	if(!next)
@@ -381,6 +382,39 @@ int dft_sched_backpropfill(int * next) {
 		if(-1 == dft_graph_toposort(&gg, thread_order)) {
 			free(thread_order);
 			return -1;
+		}
+	}
+
+	if(!indegrees || !outdegrees) {
+		if(!indegrees) {
+			indegrees = malloc(sizeof(float)*gg.size);
+			if(!indegrees)
+				return -1;
+			memset(indegrees, 0, sizeof(float)*gg.size);
+			for(i=0; i<gg.size; i++)
+				for(j=0; j<gg.size; j++)
+					if(gg.adjmat[i][j])
+						indegrees[j]++;
+		}
+		if(!outdegrees) {
+			outdegrees = malloc(sizeof(float)*gg.size);
+			if(!outdegrees)
+				return -1;
+			memset(outdegrees, 0, sizeof(float)*gg.size);
+			for(i=0; i<gg.size; i++)
+				for(j=0; j<gg.size; j++)
+					if(gg.adjmat[i][j])
+						outdegrees[i]++;
+		}
+		for(i=0; i<gg.size; i++) {
+			if(!indegrees[i]) {
+				outdegrees[i] /= 2.0;
+				indegrees[i] = 1;
+			}
+			if(!outdegrees[i]) {
+				indegrees[i] /= 2.0;
+				outdegrees[i] = 1;
+			}
 		}
 	}
 
@@ -409,11 +443,13 @@ int dft_sched_backpropfill(int * next) {
 				}
 			}
 
-	for(i=0; i<gg.size; i++)
-		if(currmax < (idprios[i] + stprios[i])) {
-			currmax = idprios[i] + stprios[i];
+	for(i=0; i<gg.size; i++) {
+		if(currmax<(idprios[i]/indegrees[i]+stprios[i]/outdegrees[i])) {
+			currmax=idprios[i]/indegrees[i]+
+				stprios[i]/outdegrees[i];
 			*next = i;
 		}
+	}
 
 	return 0;
 }

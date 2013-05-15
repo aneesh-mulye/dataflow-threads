@@ -1,0 +1,281 @@
+Total Consumed: 100
+Total Scheduler Invocations: 18
+Aggregate Throughput: 555.556 bytes/second
+Invocations for this block: 18
+Instantaneous throughput = 555.556 bytes/second
+
+Total Consumed: 200
+Total Scheduler Invocations: 33
+Aggregate Throughput: 606.061 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 300
+Total Scheduler Invocations: 49
+Aggregate Throughput: 612.245 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 400
+Total Scheduler Invocations: 65
+Aggregate Throughput: 615.385 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 500
+Total Scheduler Invocations: 80
+Aggregate Throughput: 625 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 600
+Total Scheduler Invocations: 97
+Aggregate Throughput: 618.557 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 700
+Total Scheduler Invocations: 114
+Aggregate Throughput: 614.035 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 800
+Total Scheduler Invocations: 130
+Aggregate Throughput: 615.385 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 900
+Total Scheduler Invocations: 145
+Aggregate Throughput: 620.69 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 1000
+Total Scheduler Invocations: 161
+Aggregate Throughput: 621.118 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 1100
+Total Scheduler Invocations: 178
+Aggregate Throughput: 617.978 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 1200
+Total Scheduler Invocations: 195
+Aggregate Throughput: 615.385 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 1300
+Total Scheduler Invocations: 210
+Aggregate Throughput: 619.048 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 1400
+Total Scheduler Invocations: 226
+Aggregate Throughput: 619.469 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 1500
+Total Scheduler Invocations: 243
+Aggregate Throughput: 617.284 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 1600
+Total Scheduler Invocations: 259
+Aggregate Throughput: 617.761 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 1700
+Total Scheduler Invocations: 277
+Aggregate Throughput: 613.718 bytes/second
+Invocations for this block: 18
+Instantaneous throughput = 555.556 bytes/second
+
+Total Consumed: 1800
+Total Scheduler Invocations: 291
+Aggregate Throughput: 618.557 bytes/second
+Invocations for this block: 14
+Instantaneous throughput = 714.286 bytes/second
+
+Total Consumed: 1900
+Total Scheduler Invocations: 307
+Aggregate Throughput: 618.893 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 2000
+Total Scheduler Invocations: 322
+Aggregate Throughput: 621.118 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 2100
+Total Scheduler Invocations: 339
+Aggregate Throughput: 619.469 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 2200
+Total Scheduler Invocations: 356
+Aggregate Throughput: 617.978 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 2300
+Total Scheduler Invocations: 372
+Aggregate Throughput: 618.28 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 2400
+Total Scheduler Invocations: 387
+Aggregate Throughput: 620.155 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 2500
+Total Scheduler Invocations: 404
+Aggregate Throughput: 618.812 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 2600
+Total Scheduler Invocations: 420
+Aggregate Throughput: 619.048 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 2700
+Total Scheduler Invocations: 437
+Aggregate Throughput: 617.849 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 2800
+Total Scheduler Invocations: 452
+Aggregate Throughput: 619.469 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 2900
+Total Scheduler Invocations: 468
+Aggregate Throughput: 619.658 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 3000
+Total Scheduler Invocations: 483
+Aggregate Throughput: 621.118 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 3100
+Total Scheduler Invocations: 501
+Aggregate Throughput: 618.762 bytes/second
+Invocations for this block: 18
+Instantaneous throughput = 555.556 bytes/second
+
+Total Consumed: 3200
+Total Scheduler Invocations: 517
+Aggregate Throughput: 618.956 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 3300
+Total Scheduler Invocations: 533
+Aggregate Throughput: 619.137 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 3400
+Total Scheduler Invocations: 548
+Aggregate Throughput: 620.438 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 3500
+Total Scheduler Invocations: 565
+Aggregate Throughput: 619.469 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 3600
+Total Scheduler Invocations: 582
+Aggregate Throughput: 618.557 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 3700
+Total Scheduler Invocations: 598
+Aggregate Throughput: 618.729 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 3800
+Total Scheduler Invocations: 613
+Aggregate Throughput: 619.902 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 3900
+Total Scheduler Invocations: 629
+Aggregate Throughput: 620.032 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 4000
+Total Scheduler Invocations: 646
+Aggregate Throughput: 619.195 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 4100
+Total Scheduler Invocations: 663
+Aggregate Throughput: 618.401 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 4200
+Total Scheduler Invocations: 678
+Aggregate Throughput: 619.469 bytes/second
+Invocations for this block: 15
+Instantaneous throughput = 666.667 bytes/second
+
+Total Consumed: 4300
+Total Scheduler Invocations: 694
+Aggregate Throughput: 619.597 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 4400
+Total Scheduler Invocations: 711
+Aggregate Throughput: 618.847 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 4500
+Total Scheduler Invocations: 727
+Aggregate Throughput: 618.982 bytes/second
+Invocations for this block: 16
+Instantaneous throughput = 625 bytes/second
+
+Total Consumed: 4600
+Total Scheduler Invocations: 744
+Aggregate Throughput: 618.28 bytes/second
+Invocations for this block: 17
+Instantaneous throughput = 588.235 bytes/second
+
+Total Consumed: 4700
+Total Scheduler Invocations: 759
+Aggregate Throughput: 619.236 bytes/second
+Invocations for this block: 15
+Instanta

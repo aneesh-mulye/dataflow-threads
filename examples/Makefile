@@ -1,3 +1,5 @@
+all: bfj ufj bt
+
 bfj:
 	gcc 00_bfj.c ../dft_graph.c -ggdb -o bfj.out
 
